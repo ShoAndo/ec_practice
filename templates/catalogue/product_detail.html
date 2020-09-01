@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+{% extends 'catalogue/base.html' %}
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ECサイト - 商品詳細</title>
+</head>
+
+<body>
+{% block title %}商品詳細{% endblock %}
+
+    
+<h3>{{ product.name }}</h3>
+{{ product.price }}円
+    
+</body>
+{% block content %}
+    <h3>{{ product.name }}</h3>
+    {{ product.price }}円
+    <a href="{% url 'product_edit' product.id %}">編集</a>
+    <a href="{% url 'product_delete' product.id %}">削除</a>
+{% endblock %}
+</html>

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ECサイト - 商品一覧</title>
+</head>
+
+<body>
+<a href="{% url 'product_list' %}">商品一覧</a>
+<hr>
+
+<ul>
+  {% for product in products %}
+  <li>({{ product.category.name }}) <a href="{% url 'product_detail' product.id %}">{{ product.name }}</a>: {{ product.price }}円</li>
+  {% endfor %}
+</ul>
+
+</body>
+</html>
