@@ -1,73 +1,44 @@
 from django.test import TestCase
 from django.urls import reverse
-from .models import Category, Product
+from catalogue.models import Category, Product
+from catalogue.forms import ProductSearchForm
 
-class TestProductList(TestCase):
-  def test_get(self):
-    category = Category.objects.create(name="カテゴリー1")
-    Product.objects.create(name="テスト1", price=100, category=category)
-    Product.objects.create(name="テスト2", price=200, category=category)
-    res = self.client.get(reverse('product_list'))
-    self.assertTemplateUsed(res, 'catalogue/product_list.html')
-    self.assertContains(res, 'テスト1')
-    self.assertContains(res, 100)
-    self.assertContains(res, 'テスト2')
-    self.assertContains(res, 200)
-    self.assertContains(res, 'カテゴリー1')
+class TestProductSearchForm(TestCase):
+  def test_filter_product_name(self):
+    Product.objects.create(name='冷凍パスタ', price=800)
+    Product.objects.create(name='冷凍餃子', price=100)
+    Product.objects.create(name='煮込みグラタン', price=700)
 
-class TestProductDetail(TestCase):
-  def test_get(self):
-    Product.objects.create(id=1, name="テスト1", price=100)
-    res = self.client.get(reverse('product_detail', args=(1,)))
-    self.assertTemplateUsed(res, 'catalogue/product_detail.html')
-    self.assertContains(res, 'テスト1')
-    self.assertContains(res, '100円')
+    form = ProductSearchForm({'name': '冷凍'})
+    actual = form.filter_products(Product.object.order_by('name'))
+    self.assertEqual(actual[0].name, '冷凍パスタ')
+    self.assertEqual(actual[1].name, '冷凍餃子')
 
-  def test_404(self):
-    res = self.client.get(reverse('product_detail', args=(1,)))
-    self.assertEqual(res.status_code, 404)
+  def test_filter_products_price_max(self):
+    Product.objects.create(name='煮込みグラタン', price=700)
+    Product.objects.create(name='ドリア', price=701)
 
-class TestProductEdit(TestCase):
-  def test_get(self):
-    product = Product.objects.create(id=1, name="テスト1", price=100)
-    res = self.client.get(reverse('product_edit', args=(1,)))
-    self.assertTemplateUsed(res, 'catalogue/product_edit.html')
-    self.assertEqual(res.context['form'].instance, product)
-    self.assertEqual(res.context['product'], product)
+    form = ProductSearchForm({'price_max': 700})
+    actual = form.filter_products(Product.objects.all())
+    self.assertEqual(len(actual), 1)
+    self.assertEqual(actual[0].name, '煮込みグラタン')
 
-  def test_post(self):
-    product = Product.objects.create(id=1, name="テスト1", price=100)
-    res = self.client.post(reverse('product_edit', args=(1,)), data={ 'name': '変更', 'price': 200 })
-    self.assertRedirects(res, reverse('product_detail', args=(product.id,)))
-    product.refresh_from_db()
-    self.assertEqual(product.name, '変更')
-    self.assertEqual(product.price, 200)
+  def test_filter_products_category(self):
+    category = Category.objects.create(id=1, name='食品')
+    Product.objects.create(name='煮込みグラタン', price=700, category=category)
+    Product.objects.create(name='おしゃれスカジャン', price=8900)
 
-  def test_post_invalid(self):
-    product = Product.objects.create(id=1, name="テスト1", price=100)
-    res = self.client.post(reverse('product_edit', args=(1,)), data={'name': ''})
-    self.assertTemplateUsed(res, 'catalogue/product_edit.html')
-    self.assertFalse(res.context['form'].is_invalid())
-    self.assertEqual(res.context['form'].instance, product)
-    self.assertEqual(res.context['product'], product)
+    form = ProductSearchForm({'category': 1})
+    actual = form.filter_products(Product.objects.all())
+    self.assertEqual(len(actual), 1)
+    self.assertEqual(actual[0].name, '煮込みグラタン')
 
-  def test_404(self):
-    res = self.client.post(reverse('product_list', args=(1,)), data={'name': 'テスト1'})
-    self.assertEqual(res.status_code, 404)
+  def test_filter_invalid(self):
+    Product.objects.create(name='おしゃれスカジャン', price=8900)
+    Product.objects.create(name='煮込みグラタン', price=700)
 
-class TestProductDelete(TestCase):
-  def test_get(self):
-    product = Product.objects.create(id=1, name="テスト1", price=100)
-    res = self.client.get(reverse('product_delete', args=(1,)))
-    self.assertTemplateUsed(res, 'catalogue/product_delete.html')
-    self.assertEqual(res.context['product'], product)
-
-  def test_post(self):
-    Product.objects.create(id=1, name='テスト1', price=100)
-    res = self.client.post(reverse('product_delete', args=(1,)))
-    self.assertRedirects(res, reverse('prodict_list'))
-    self.assertFalse(Product.object.exists())
-
-  def test_404(self):
-    res = self.client.post(reverse('product_delete'), args=(1,))
-    self.assertEqual(res.status_code, 404)
+    form = ProductSearchForm({'price_max': '無効'})
+    actual = form.filter_products(Product.objects.order_by('name'))
+    self.assertEqual(len(actual), 2)
+    self.assertEqual(actual[0].name, 'おしゃれグラタン' )
+    self.assertEqual(actual[0].name, '煮込みグラタン')
