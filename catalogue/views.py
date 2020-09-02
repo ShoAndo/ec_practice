@@ -4,11 +4,20 @@ from .models import Product
 from .forms import ProductEditForm
 from django.http import Http404, HttpResponseRedirect
 from django.urls import reverse
-
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 def product_list(request):
   products = Product.objects.order_by('name')
+  paginator = Paginator(products, 5)
+
+  page = request.GET.get('page', 1)
+  products = paginator.page(page)
+  try:
+      products = paginator.page(page)
+  except (EmptyPage, PageNotAnInteger):
+      products = paginator.page(1)
   return TemplateResponse(request, 'catalogue/product_list.html', {'products': products})
+
 
 def product_detail(request, product_id):
   try:
