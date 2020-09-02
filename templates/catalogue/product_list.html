@@ -15,5 +15,19 @@
   {% endfor %}
 </ul>
 
+{% if products.has_previous %}
+        <a href="?page={{ products.previous_page_number }}">&lt; 前のページ</a>
+    {% else %}
+        <span>&lt; 前のページ</span>
+    {% endif %}
+
+    {{ products.number }}ページ
+
+    {% if products.has_next %}
+      <a href="?page={{ products.next_page_number }}">次のページ &gt;</a>
+    {% else %}
+        <span>次のページ &gt;</span>
+    {% endif %}
+
 </body>
 </html>
